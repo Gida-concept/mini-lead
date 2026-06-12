@@ -1,0 +1,48 @@
+declare module "lucide-react" {
+  import { FC, SVGProps } from "react";
+
+  export const AlertCircle: FC<SVGProps<SVGSVGElement>>;
+  export const ArrowDown: FC<SVGProps<SVGSVGElement>>;
+  export const ArrowUp: FC<SVGProps<SVGSVGElement>>;
+  export const ArrowUpDown: FC<SVGProps<SVGSVGElement>>;
+  export const BarChart3: FC<SVGProps<SVGSVGElement>>;
+  export const Camera: FC<SVGProps<SVGSVGElement>>;
+  export const Check: FC<SVGProps<SVGSVGElement>>;
+  export const CheckCircle2: FC<SVGProps<SVGSVGElement>>;
+  export const ChevronDown: FC<SVGProps<SVGSVGElement>>;
+  export const ChevronLeft: FC<SVGProps<SVGSVGElement>>;
+  export const ChevronRight: FC<SVGProps<SVGSVGElement>>;
+  export const ChevronUp: FC<SVGProps<SVGSVGElement>>;
+  export const Copy: FC<SVGProps<SVGSVGElement>>;
+  export const Download: FC<SVGProps<SVGSVGElement>>;
+  export const ExternalLink: FC<SVGProps<SVGSVGElement>>;
+  export const Eye: FC<SVGProps<SVGSVGElement>>;
+  export const Facebook: FC<SVGProps<SVGSVGElement>>;
+  export const FileJson: FC<SVGProps<SVGSVGElement>>;
+  export const FileSearch: FC<SVGProps<SVGSVGElement>>;
+  export const FileSpreadsheet: FC<SVGProps<SVGSVGElement>>;
+  export const FileText: FC<SVGProps<SVGSVGElement>>;
+  export const Globe: FC<SVGProps<SVGSVGElement>>;
+  export const Inbox: FC<SVGProps<SVGSVGElement>>;
+  export const Info: FC<SVGProps<SVGSVGElement>>;
+  export const LayoutDashboard: FC<SVGProps<SVGSVGElement>>;
+  export const List: FC<SVGProps<SVGSVGElement>>;
+  export const Loader2: FC<SVGProps<SVGSVGElement>>;
+  export const Mail: FC<SVGProps<SVGSVGElement>>;
+  export const MapPin: FC<SVGProps<SVGSVGElement>>;
+  export const Menu: FC<SVGProps<SVGSVGElement>>;
+  export const MessageCircle: FC<SVGProps<SVGSVGElement>>;
+  export const MoreHorizontal: FC<SVGProps<SVGSVGElement>>;
+  export const Phone: FC<SVGProps<SVGSVGElement>>;
+  export const RefreshCw: FC<SVGProps<SVGSVGElement>>;
+  export const Search: FC<SVGProps<SVGSVGElement>>;
+  export const SearchX: FC<SVGProps<SVGSVGElement>>;
+  export const Star: FC<SVGProps<SVGSVGElement>>;
+  export const Sun: FC<SVGProps<SVGSVGElement>>;
+  export const Moon: FC<SVGProps<SVGSVGElement>>;
+  export const Trash2: FC<SVGProps<SVGSVGElement>>;
+  export const TrendingUp: FC<SVGProps<SVGSVGElement>>;
+  export const Users: FC<SVGProps<SVGSVGElement>>;
+  export const X: FC<SVGProps<SVGSVGElement>>;
+  export const XCircle: FC<SVGProps<SVGSVGElement>>;
+}
