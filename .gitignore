@@ -40,5 +40,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Development documentation (not for GitHub)
+CLAUDE.md
+AGENTS.md
+API-REFERENCE.md
+ARCHITECTURE.md
+task.md
+phase.md
+
 # Misc
 .cache/
