@@ -93,17 +93,20 @@ export function NavSidebar() {
 
   return (
     <>
-      {/* Mobile hamburger */}
+      {/* Mobile hamburger (hidden when sidebar is open — the header close button takes over) */}
       <Button
         ref={hamburgerRef}
         variant="ghost"
         size="icon"
-        className="fixed top-4 left-4 z-50 h-10 w-10 lg:hidden"
-        onClick={() => setMobileOpen((prev) => !prev)}
-        aria-label="Toggle navigation menu"
+        className={cn(
+          "fixed top-4 left-4 z-50 h-10 w-10 lg:hidden",
+          mobileOpen && "hidden"
+        )}
+        onClick={open}
+        aria-label="Open navigation menu"
         aria-expanded={mobileOpen}
       >
-        {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        <Menu className="h-5 w-5" />
       </Button>
 
       {/* Sidebar backdrop (mobile) */}
