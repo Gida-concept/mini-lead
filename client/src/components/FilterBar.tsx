@@ -56,7 +56,7 @@ export function FilterBar({
           value={selectedSource}
           onValueChange={(v) => onSourceChange(v as LeadSource | "all")}
         >
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-full sm:w-[160px]">
             <SelectValue placeholder="All Sources" />
           </SelectTrigger>
           <SelectContent>
@@ -74,7 +74,7 @@ export function FilterBar({
         value={selectedStatus}
         onValueChange={(v) => onStatusChange(v as LeadStatus | "all")}
       >
-        <SelectTrigger className="w-[140px]">
+        <SelectTrigger className="w-full sm:w-[140px]">
           <SelectValue placeholder="All Statuses" />
         </SelectTrigger>
         <SelectContent>
@@ -87,7 +87,7 @@ export function FilterBar({
         </SelectContent>
       </Select>
 
-      <div className="relative flex-1 min-w-[200px] max-w-sm">
+      <div className="relative flex-1 min-w-0 sm:min-w-[200px] w-full sm:max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Search by name, description, or address..."

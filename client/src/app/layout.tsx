@@ -28,7 +28,7 @@ export default function RootLayout({
         />
         <div className="flex h-full">
           <NavSidebar />
-          <main className="flex-1 overflow-auto p-6 pt-14 lg:p-8">
+          <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pt-14 sm:pt-14 lg:pt-0">
             {children}
           </main>
         </div>

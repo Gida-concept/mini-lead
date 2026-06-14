@@ -124,8 +124,8 @@ export function SearchForm({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Button type="submit" disabled={isRunning}>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <Button type="submit" disabled={isRunning} className="w-full sm:w-auto">
           {isRunning ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

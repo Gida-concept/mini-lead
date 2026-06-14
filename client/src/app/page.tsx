@@ -27,7 +27,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground mt-1">
@@ -55,7 +55,7 @@ export default function DashboardPage() {
         <Tabs defaultValue="facebook">
           <TabsList className="overflow-x-auto flex-nowrap w-full sm:w-auto">
             {SOURCES.map((source) => (
-              <TabsTrigger key={source} value={source}>
+              <TabsTrigger key={source} value={source} className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">
                 {SOURCE_LABELS[source]}
               </TabsTrigger>
             ))}
