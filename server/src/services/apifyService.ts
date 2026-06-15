@@ -91,11 +91,25 @@ function transformGoogleSearchResult(
     // Try to extract enriched contacts from various field names
     let email: string | null = null;
     let phone: string | null = null;
+    let socialHandle: string | null = null;
     const enrichedLeads = (or.leads || or.leadsEnrichment || or.businessLeads || or.contacts || []) as any[];
     if (enrichedLeads.length > 0) {
       const contact = enrichedLeads[0];
       email = (contact.email as string) || null;
       phone = (contact.phone as string) || null;
+      // Extract LinkedIn / social profile URL from enriched contact data
+      const linkedInUrl =
+        (contact.linkedInUrl as string) ||
+        (contact.linkedinUrl as string) ||
+        (contact.linkedin_url as string) ||
+        (contact.linkedIn as string) ||
+        (contact.profileUrl as string) ||
+        (contact.socialProfile as string) ||
+        (contact.socialUrl as string) ||
+        null;
+      if (linkedInUrl) {
+        socialHandle = linkedInUrl;
+      }
     }
 
     // Skip if no contact info
@@ -103,7 +117,6 @@ function transformGoogleSearchResult(
 
     // Extract business details
     let businessName: string | null = title;
-    let socialHandle: string | null = null;
     let pageUrl: string | null = url;
 
     if (source === 'facebook') {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Copy,
   ExternalLink,
+  Eye,
   Mail,
   MapPin,
   Phone,
@@ -98,6 +99,11 @@ export function LeadCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
               {lead.page_url && (
+                <DropdownMenuItem onClick={() => window.open(lead.page_url!, '_blank', 'noopener,noreferrer')}>
+                  <ExternalLink className="mr-2 h-4 w-4" /> Visit Website
+                </DropdownMenuItem>
+              )}
+              {lead.page_url && (
                 <DropdownMenuItem onClick={() => handleCopy(lead.page_url!, "URL")}>
                   <Copy className="mr-2 h-4 w-4" /> Copy URL
                 </DropdownMenuItem>
@@ -114,7 +120,7 @@ export function LeadCard({
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onViewDetails(lead)}>
-                <ExternalLink className="mr-2 h-4 w-4" /> View Details
+                <Eye className="mr-2 h-4 w-4" /> View Details
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <div className="px-2 py-1.5">

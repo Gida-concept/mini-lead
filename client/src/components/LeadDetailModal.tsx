@@ -66,7 +66,24 @@ export function LeadDetailModal({
               </div>
               <div>
                 <span className="font-medium text-muted-foreground">Social Handle</span>
-                <p>{lead.social_handle || "—"}</p>
+                <p>
+                  {lead.social_handle ? (
+                    lead.social_handle.startsWith("http") ? (
+                      <a
+                        href={lead.social_handle}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline break-all"
+                      >
+                        {lead.social_handle}
+                      </a>
+                    ) : (
+                      <span>{lead.social_handle}</span>
+                    )
+                  ) : (
+                    "—"
+                  )}
+                </p>
               </div>
               <div>
                 <span className="font-medium text-muted-foreground">Rating</span>

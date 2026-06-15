@@ -16,6 +16,7 @@ Search for businesses by type and location across multiple platforms, collect co
 - **Smart Search** — Enter any business type and location, get structured lead data
 - **Lead Management** — Sort, filter, search, and bulk-update lead statuses (new → contacted → qualified → rejected)
 - **Detailed Lead View** — Business name, email, phone, address, rating, social handles, and raw data
+- **Visit Website** — Open business websites or social pages directly from lead details
 - **Bulk Actions** — Update status or delete multiple leads at once
 - **Export** — Download leads as CSV or JSON with current filters applied
 - **Dark Mode** — Toggle between light and dark themes
