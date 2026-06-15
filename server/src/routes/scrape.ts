@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { validate } from '../middleware/validate.js';
 import { searchService } from '../services/searchService.js';
-import { startAndWaitForRun } from '../services/apifyService.js';
+import { startAndWaitForRun } from '../services/serpApiService.js';
 import { leadService } from '../services/leadService.js';
 import { AppError } from '../utils/AppError.js';
 

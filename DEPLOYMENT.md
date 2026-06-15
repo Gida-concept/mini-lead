@@ -249,8 +249,8 @@ const envSchema = z.object({
   TURSO_DATABASE_URL: z.string().optional(),
   TURSO_AUTH_TOKEN: z.string().optional(),
 
-  // Apify
-  APIFY_TOKEN: z.string().default(''),
+  // SerpAPI
+  SERPAPI_API_KEY: z.string().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -462,7 +462,7 @@ fly launch --no-deploy
 fly secrets set DATABASE_PROVIDER=turso
 fly secrets set TURSO_DATABASE_URL="libsql://mini-lead-db-<org>.turso.io"
 fly secrets set TURSO_AUTH_TOKEN="your-turso-token"
-fly secrets set APIFY_TOKEN="your-apify-token"
+fly secrets set SERPAPI_API_KEY="your-serpapi-key"
 fly secrets set NODE_ENV="production"
 
 # Deploy
@@ -592,8 +592,8 @@ NODE_ENV=production
 DATABASE_PROVIDER=sqlite
 DATABASE_PATH=./database/leads.db
 
-# Apify
-APIFY_TOKEN=your_apify_api_token_here
+# SerpAPI
+SERPAPI_API_KEY=your_serpapi_api_key_here
 ```
 
 > ⚠️ **VPS users can skip installing `@libsql/client` entirely** — it's only needed for the Turso provider. The code imports it dynamically, so if `DATABASE_PROVIDER=sqlite`, it's never loaded.
@@ -647,7 +647,7 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
 
-        # Increase timeouts for scraping (Apify actors can take time)
+        # Increase timeouts for scraping (SerpAPI + contact crawler can take time)
         proxy_read_timeout 120s;
         proxy_connect_timeout 30s;
     }
@@ -771,7 +771,7 @@ crontab -e
 
 ## Security Notes
 
-- **Keep `.env` private** — contains your `APIFY_TOKEN`
+- **Keep `.env` private** — contains your `SERPAPI_API_KEY`
 - The app has **no authentication** — it's a personal tool
 - For VPS: consider IP whitelisting or VPN for sensitive deployments
 - Regular updates: `sudo apt update && sudo apt upgrade`

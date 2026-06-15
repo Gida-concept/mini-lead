@@ -34,7 +34,7 @@ Search for businesses by type and location across multiple platforms, collect co
 | **Backend** | Express.js 5, TypeScript |
 | **Database** | SQLite (sql.js) |
 | **Validation** | Zod |
-| **Scraping** | Apify Actors (`google-search-scraper`, `google-maps-email-extractor`) |
+| **Scraping** | SerpAPI (Google Search + Google Maps APIs) |
 | **Export** | fast-csv |
 
 ---
@@ -49,9 +49,18 @@ Search for businesses by type and location across multiple platforms, collect co
 └─────────────┘       └─────┬───────┘       └───────────┘
                             │
                      ┌──────▼───────┐
-                     │  Apify       │
-                     │  Actors      │
-                     └──────────────┘
+                     │  SerpAPI     │
+                     │  (Google     │
+                     │   Search +   │
+                     │   Maps)      │
+                     └──────┬───────┘
+                            │
+                     ┌──────▼──────────┐
+                     │  Contact        │
+                     │  Crawler        │
+                     │  (Cheerio +     │
+                     │   Axios)        │
+                     └─────────────────┘
 ```
 
 ---
@@ -62,7 +71,7 @@ Search for businesses by type and location across multiple platforms, collect co
 
 - **Node.js** 22+
 - **npm** 10+
-- **Apify API Token** — [Get one free here](https://console.apify.com/signup) (required for scraping)
+- **SerpAPI Key** — [Get a free API key here](https://serpapi.com/) (250 searches/month free)
 
 ### Local Development
 
@@ -76,7 +85,7 @@ npm install
 
 # Set up environment variables
 cp .env.example .env
-# Edit .env with your APIFY_TOKEN
+# Edit .env with your SERPAPI_API_KEY
 
 # Start both frontend and backend
 npm run dev
@@ -94,7 +103,7 @@ This starts:
 |----------|---------|-------------|
 | `PORT` | `3001` | Backend server port |
 | `DATABASE_PATH` | `./database/leads.db` | SQLite database file path |
-| `APIFY_TOKEN` | — | Your Apify API token |
+| `SERPAPI_API_KEY` | — | Your SerpAPI API key |
 | `NODE_ENV` | `development` | Environment mode |
 
 **Frontend** (create `client/.env.local`):
@@ -140,7 +149,7 @@ Migrations run automatically on server startup.
    - **Root Directory:** `server`
    - **Build Command:** `npm install && npm run build`
    - **Start Command:** `npm start`
-4. Add env variables: `NODE_ENV=production`, `DATABASE_PATH=./database/leads.db`, `APIFY_TOKEN=your-token`, `PORT=3001`
+4. Add env variables: `NODE_ENV=production`, `DATABASE_PATH=./database/leads.db`, `SERPAPI_API_KEY=your-key`, `PORT=3001`
 5. Deploy!
 
 ---
@@ -183,7 +192,7 @@ mini-lead/
 │   └── ...
 ├── server/                    # Express backend
 │   ├── src/
-│   │   ├── config/            # DB, env, Apify config
+│   │   ├── config/            # DB, env config
 │   │   ├── models/            # SQL queries
 │   │   ├── services/          # Business logic
 │   │   ├── routes/            # API routes
