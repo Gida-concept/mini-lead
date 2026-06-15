@@ -9,6 +9,7 @@
     "start": "node dist/server.js"
   },
   "dependencies": {
+    "@libsql/client": "^0.14.0",
     "apify-client": "^2.9.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

@@ -14,42 +14,39 @@ function rowToSearch(row: Record<string, unknown>): SearchRecord {
 }
 
 export const SearchModel = {
-  create(input: SearchCreateInput): SearchRecord {
-    const stmt = db.prepare(`
-      INSERT INTO searches (source, query_params, run_status)
-      VALUES (?, ?, ?)
-    `);
-
-    const result = stmt.run(
-      input.source,
-      input.query_params,
-      input.run_status ?? 'running',
+  async create(input: SearchCreateInput): Promise<SearchRecord> {
+    await db.execute(
+      `INSERT INTO searches (source, query_params, run_status)
+       VALUES (?, ?, ?)`,
+      [input.source, input.query_params, input.run_status ?? 'running'],
     );
 
-    return this.findById(result.lastInsertRowid as number)!;
+    const idResult = await db.execute('SELECT last_insert_rowid() as id');
+    const newId = (idResult.rows[0] as any).id;
+    return this.findById(newId) as Promise<SearchRecord>;
   },
 
-  findById(id: number): SearchRecord | null {
-    const stmt = db.prepare('SELECT * FROM searches WHERE id = ?');
-    const row = stmt.get(id) as Record<string, unknown> | undefined;
+  async findById(id: number): Promise<SearchRecord | null> {
+    const result = await db.execute('SELECT * FROM searches WHERE id = ?', [id]);
+    const row = result.rows[0] as Record<string, unknown> | undefined;
     return row ? rowToSearch(row) : null;
   },
 
-  findAll(
+  async findAll(
     pagination: { page: number; limit: number },
-  ): { data: SearchRecord[]; meta: PaginationMeta } {
+  ): Promise<{ data: SearchRecord[]; meta: PaginationMeta }> {
     const page = Math.max(1, pagination.page);
     const limit = Math.min(100, Math.max(1, pagination.limit));
     const offset = (page - 1) * limit;
 
-    const countRow = db.prepare('SELECT COUNT(*) as total FROM searches').get() as { total: number };
-    const total = countRow.total;
+    const countResult = await db.execute('SELECT COUNT(*) as total FROM searches');
+    const total = (countResult.rows[0] as any).total;
 
-    const rows = db.prepare(
+    const dataResult = await db.execute(
       'SELECT * FROM searches ORDER BY created_at DESC LIMIT ? OFFSET ?',
-    ).all(limit, offset) as Record<string, unknown>[];
-
-    const data = rows.map(rowToSearch);
+      [limit, offset],
+    );
+    const data = dataResult.rows.map(rowToSearch);
 
     return {
       data,
@@ -62,42 +59,41 @@ export const SearchModel = {
     };
   },
 
-  updateStatus(id: number, status: 'running' | 'completed' | 'failed', resultsCount?: number): SearchRecord | null {
+  async updateStatus(id: number, status: 'running' | 'completed' | 'failed', resultsCount?: number): Promise<SearchRecord | null> {
     if (resultsCount !== undefined) {
-      const stmt = db.prepare(
+      await db.execute(
         'UPDATE searches SET run_status = ?, results_count = ? WHERE id = ?',
+        [status, resultsCount, id],
       );
-      stmt.run(status, resultsCount, id);
     } else {
-      const stmt = db.prepare(
+      await db.execute(
         'UPDATE searches SET run_status = ? WHERE id = ?',
+        [status, id],
       );
-      stmt.run(status, id);
     }
 
     return this.findById(id);
   },
 
-  getRecentStats(): { last24h: number; last7d: number } {
-    const last24hRow = db.prepare(
+  async getRecentStats(): Promise<{ last24h: number; last7d: number }> {
+    const last24hResult = await db.execute(
       "SELECT COUNT(*) as count FROM searches WHERE created_at >= datetime('now', '-1 day')",
-    ).get() as { count: number };
-
-    const last7dRow = db.prepare(
+    );
+    const last7dResult = await db.execute(
       "SELECT COUNT(*) as count FROM searches WHERE created_at >= datetime('now', '-7 days')",
-    ).get() as { count: number };
+    );
 
     return {
-      last24h: last24hRow.count,
-      last7d: last7dRow.count,
+      last24h: (last24hResult.rows[0] as any).count,
+      last7d: (last7dResult.rows[0] as any).count,
     };
   },
 
-  findRecent(limit: number = 5): SearchRecord[] {
-    const rows = db.prepare(
+  async findRecent(limit: number = 5): Promise<SearchRecord[]> {
+    const result = await db.execute(
       'SELECT * FROM searches ORDER BY created_at DESC LIMIT ?',
-    ).all(limit) as Record<string, unknown>[];
-
-    return rows.map(rowToSearch);
+      [limit],
+    );
+    return result.rows.map(rowToSearch);
   },
 };

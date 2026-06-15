@@ -15,24 +15,18 @@ const scrapeBodySchema = z.object({
 });
 
 const sourceParamSchema = z.object({
-  source: z.enum(['facebook', 'instagram', 'google-web', 'google-maps']),
+  source: z.enum(['facebook', 'instagram', 'google_web', 'google_maps']),
 });
 
 const ESTIMATED_TIMES: Record<string, number> = {
   facebook: 60,
   instagram: 60,
-  'google-web': 90,
-  'google-maps': 120,
+  google_web: 90,
+  google_maps: 120,
 };
 
 function mapRouteSource(source: string): string {
-  const mapping: Record<string, string> = {
-    facebook: 'facebook',
-    instagram: 'instagram',
-    'google-web': 'google_web',
-    'google-maps': 'google_maps',
-  };
-  return mapping[source] || source;
+  return source;
 }
 
 // POST /api/scrape/:source

@@ -5,14 +5,14 @@ import type { StatsOverview, StatsRecent } from '../types/index.js';
 
 export const statsService = {
   async getOverview(): Promise<StatsOverview> {
-    return LeadModel.getStats();
+    return await LeadModel.getStats();
   },
 
   async getRecent(): Promise<StatsRecent> {
-    const leadStats = LeadModel.getRecentStats();
-    const searchStats = SearchModel.getRecentStats();
-    const exportStats = ExportModel.getRecentStats();
-    const recentSearches = SearchModel.findRecent(5);
+    const leadStats = await LeadModel.getRecentStats();
+    const searchStats = await SearchModel.getRecentStats();
+    const exportStats = await ExportModel.getRecentStats();
+    const recentSearches = await SearchModel.findRecent(5);
 
     return {
       last24h: {

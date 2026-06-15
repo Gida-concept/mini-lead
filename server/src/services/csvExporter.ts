@@ -18,7 +18,7 @@ function formatDateForFilename(): string {
 
 export async function exportCsv(filters: LeadFilters, res: Response): Promise<void> {
   // Get all matching leads (unpaginated, default sort by created_at desc)
-  const { data: leads } = LeadModel.findAll(
+  const { data: leads } = await LeadModel.findAll(
     filters,
     { page: 1, limit: 100000 },
     { sortBy: 'created_at', sortOrder: 'desc' },
@@ -61,7 +61,7 @@ export async function exportCsv(filters: LeadFilters, res: Response): Promise<vo
   csvStream.end();
 
   // Save export record after stream completes
-  ExportModel.create({
+  await ExportModel.create({
     filename,
     filter_source: source,
     record_count: leads.length,

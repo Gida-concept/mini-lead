@@ -11,6 +11,9 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   DATABASE_PATH: z.string().default('./database/leads.db'),
   APIFY_TOKEN: z.string().default(''),
+  DATABASE_PROVIDER: z.enum(['sqlite', 'turso']).default('sqlite'),
+  TURSO_DATABASE_URL: z.string().optional(),
+  TURSO_AUTH_TOKEN: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

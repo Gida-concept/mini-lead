@@ -96,11 +96,11 @@ function rowToLead(row: Record<string, unknown>): Lead {
 }
 
 export const LeadModel = {
-  findAll(
+  async findAll(
     filters: LeadFilters,
     pagination: { page: number; limit: number },
     sort: { sortBy: string; sortOrder: string },
-  ): { data: Lead[]; meta: PaginationMeta } {
+  ): Promise<{ data: Lead[]; meta: PaginationMeta }> {
     const { whereClauses, params } = buildWhereClause(filters);
     const whereSQL = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
 
@@ -112,16 +112,15 @@ export const LeadModel = {
     const offset = (page - 1) * limit;
 
     // Count query
-    const countStmt = db.prepare(`SELECT COUNT(*) as total FROM leads ${whereSQL}`);
-    const countRow = countStmt.get(...params) as { total: number };
-    const total = countRow.total;
+    const countResult = await db.execute(`SELECT COUNT(*) as total FROM leads ${whereSQL}`, params);
+    const total = (countResult.rows[0] as any).total;
 
     // Data query
-    const dataStmt = db.prepare(
+    const dataResult = await db.execute(
       `SELECT * FROM leads ${whereSQL} ORDER BY ${sortBy} ${sortOrder} LIMIT ? OFFSET ?`,
+      [...params, limit, offset],
     );
-    const rows = dataStmt.all(...params, limit, offset) as Record<string, unknown>[];
-    const data = rows.map(rowToLead);
+    const data = dataResult.rows.map(rowToLead);
 
     return {
       data,
@@ -134,40 +133,41 @@ export const LeadModel = {
     };
   },
 
-  findById(id: number): Lead | null {
-    const stmt = db.prepare('SELECT * FROM leads WHERE id = ?');
-    const row = stmt.get(id) as Record<string, unknown> | undefined;
+  async findById(id: number): Promise<Lead | null> {
+    const result = await db.execute('SELECT * FROM leads WHERE id = ?', [id]);
+    const row = result.rows[0] as Record<string, unknown> | undefined;
     return row ? rowToLead(row) : null;
   },
 
-  create(input: LeadCreateInput): Lead {
-    const stmt = db.prepare(`
-      INSERT INTO leads (source, business_type, location, business_name, page_url, email, phone, address, rating, review_count, social_handle, description, raw_data, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const result = stmt.run(
-      input.source,
-      input.business_type,
-      input.location,
-      input.business_name ?? null,
-      input.page_url ?? null,
-      input.email ?? null,
-      input.phone ?? null,
-      input.address ?? null,
-      input.rating ?? null,
-      input.review_count ?? null,
-      input.social_handle ?? null,
-      input.description ?? null,
-      input.raw_data ?? null,
-      input.status ?? 'new',
+  async create(input: LeadCreateInput): Promise<Lead> {
+    await db.execute(
+      `INSERT INTO leads (source, business_type, location, business_name, page_url, email, phone, address, rating, review_count, social_handle, description, raw_data, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        input.source,
+        input.business_type,
+        input.location,
+        input.business_name ?? null,
+        input.page_url ?? null,
+        input.email ?? null,
+        input.phone ?? null,
+        input.address ?? null,
+        input.rating ?? null,
+        input.review_count ?? null,
+        input.social_handle ?? null,
+        input.description ?? null,
+        input.raw_data ?? null,
+        input.status ?? 'new',
+      ],
     );
 
-    return this.findById(result.lastInsertRowid as number)!;
+    const idResult = await db.execute('SELECT last_insert_rowid() as id');
+    const newId = (idResult.rows[0] as any).id;
+    return this.findById(newId) as Promise<Lead>;
   },
 
-  update(id: number, input: LeadUpdateInput): Lead | null {
-    const existing = this.findById(id);
+  async update(id: number, input: LeadUpdateInput): Promise<Lead | null> {
+    const existing = await this.findById(id);
     if (!existing) return null;
 
     const fields: string[] = [];
@@ -219,94 +219,74 @@ export const LeadModel = {
     fields.push('updated_at = CURRENT_TIMESTAMP');
     params.push(id);
 
-    const stmt = db.prepare(
-      `UPDATE leads SET ${fields.join(', ')} WHERE id = ?`,
-    );
-    stmt.run(...params);
+    await db.execute(`UPDATE leads SET ${fields.join(', ')} WHERE id = ?`, params);
 
     return this.findById(id);
   },
 
-  delete(id: number): boolean {
-    const stmt = db.prepare('DELETE FROM leads WHERE id = ?');
-    const result = stmt.run(id);
-    return result.changes > 0;
+  async delete(id: number): Promise<boolean> {
+    const result = await db.execute('DELETE FROM leads WHERE id = ?', [id]);
+    return result.rowCount > 0;
   },
 
-  bulkUpdateStatus(ids: number[], status: string): number {
+  async bulkUpdateStatus(ids: number[], status: string): Promise<number> {
     if (ids.length === 0) return 0;
 
     const placeholders = ids.map(() => '?').join(',');
-    const stmt = db.prepare(
+    const result = await db.execute(
       `UPDATE leads SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`,
+      [status, ...ids],
     );
-    const result = stmt.run(status, ...ids);
-    return result.changes;
+    return result.rowCount;
   },
 
-  bulkDeleteByIds(ids: number[]): number {
+  async bulkDeleteByIds(ids: number[]): Promise<number> {
     if (ids.length === 0) return 0;
 
     const placeholders = ids.map(() => '?').join(',');
-    const stmt = db.prepare(`DELETE FROM leads WHERE id IN (${placeholders})`);
-    const result = stmt.run(...ids);
-    return result.changes;
+    const result = await db.execute(`DELETE FROM leads WHERE id IN (${placeholders})`, ids);
+    return result.rowCount;
   },
 
-  bulkDeleteByFilter(filter: LeadFilters): number {
+  async bulkDeleteByFilter(filter: LeadFilters): Promise<number> {
     const { whereClauses, params } = buildWhereClause(filter);
     if (whereClauses.length === 0) return 0;
 
     const whereSQL = 'WHERE ' + whereClauses.join(' AND ');
-    const stmt = db.prepare(`DELETE FROM leads ${whereSQL}`);
-    const result = stmt.run(...params);
-    return result.changes;
+    const result = await db.execute(`DELETE FROM leads ${whereSQL}`, params);
+    return result.rowCount;
   },
 
-  findByUrlAndSource(url: string, source: string): Lead | null {
-    const stmt = db.prepare('SELECT * FROM leads WHERE page_url = ? AND source = ?');
-    const row = stmt.get(url, source) as Record<string, unknown> | undefined;
+  async findByUrlAndSource(url: string, source: string): Promise<Lead | null> {
+    const result = await db.execute('SELECT * FROM leads WHERE page_url = ? AND source = ?', [url, source]);
+    const row = result.rows[0] as Record<string, unknown> | undefined;
     return row ? rowToLead(row) : null;
   },
 
-  getStats(): {
+  async getStats(): Promise<{
     totalLeads: number;
     bySource: Record<string, number>;
     byStatus: Record<string, number>;
     withEmail: number;
     withPhone: number;
     withBoth: number;
-  } {
-    const totalRow = db.prepare('SELECT COUNT(*) as count FROM leads').get() as { count: number };
-    const totalLeads = totalRow.count;
+  }> {
+    const totalResult = await db.execute('SELECT COUNT(*) as count FROM leads');
+    const totalLeads = (totalResult.rows[0] as any).count;
 
-    const sourceRows = db.prepare(
-      'SELECT source, COUNT(*) as count FROM leads GROUP BY source',
-    ).all() as { source: string; count: number }[];
-
-    const statusRows = db.prepare(
-      'SELECT status, COUNT(*) as count FROM leads GROUP BY status',
-    ).all() as { status: string; count: number }[];
-
-    const emailRow = db.prepare(
-      "SELECT COUNT(*) as count FROM leads WHERE email IS NOT NULL AND email != ''",
-    ).get() as { count: number };
-
-    const phoneRow = db.prepare(
-      "SELECT COUNT(*) as count FROM leads WHERE phone IS NOT NULL AND phone != ''",
-    ).get() as { count: number };
-
-    const bothRow = db.prepare(
-      "SELECT COUNT(*) as count FROM leads WHERE email IS NOT NULL AND email != '' AND phone IS NOT NULL AND phone != ''",
-    ).get() as { count: number };
+    const sourceResult = await db.execute('SELECT source, COUNT(*) as count FROM leads GROUP BY source');
+    const statusResult = await db.execute('SELECT status, COUNT(*) as count FROM leads GROUP BY status');
+    const emailResult = await db.execute("SELECT COUNT(*) as count FROM leads WHERE email IS NOT NULL AND email != ''");
+    const phoneResult = await db.execute("SELECT COUNT(*) as count FROM leads WHERE phone IS NOT NULL AND phone != ''");
+    const bothResult = await db.execute("SELECT COUNT(*) as count FROM leads WHERE email IS NOT NULL AND email != '' AND phone IS NOT NULL AND phone != ''");
 
     const bySource: Record<string, number> = {};
-    for (const row of sourceRows) {
+    for (const row of sourceResult.rows as any[]) {
       bySource[row.source] = row.count;
     }
 
     const byStatus: Record<string, number> = {};
-    for (const row of statusRows) {
+    for (const row of statusResult.rows as any[]) {
       byStatus[row.status] = row.count;
     }
 
@@ -322,24 +302,23 @@ export const LeadModel = {
       totalLeads,
       bySource,
       byStatus,
-      withEmail: emailRow.count,
-      withPhone: phoneRow.count,
-      withBoth: bothRow.count,
+      withEmail: (emailResult.rows[0] as any).count,
+      withPhone: (phoneResult.rows[0] as any).count,
+      withBoth: (bothResult.rows[0] as any).count,
     };
   },
 
-  getRecentStats(): { last24h: number; last7d: number } {
-    const last24hRow = db.prepare(
+  async getRecentStats(): Promise<{ last24h: number; last7d: number }> {
+    const last24hResult = await db.execute(
       "SELECT COUNT(*) as count FROM leads WHERE created_at >= datetime('now', '-1 day')",
-    ).get() as { count: number };
-
-    const last7dRow = db.prepare(
+    );
+    const last7dResult = await db.execute(
       "SELECT COUNT(*) as count FROM leads WHERE created_at >= datetime('now', '-7 days')",
-    ).get() as { count: number };
+    );
 
     return {
-      last24h: last24hRow.count,
-      last7d: last7dRow.count,
+      last24h: (last24hResult.rows[0] as any).count,
+      last7d: (last7dResult.rows[0] as any).count,
     };
   },
 };

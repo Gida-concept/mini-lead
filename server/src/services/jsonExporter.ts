@@ -17,7 +17,7 @@ function formatDateForFilename(): string {
 
 export async function exportJson(filters: LeadFilters, res: Response): Promise<void> {
   // Get all matching leads (unpaginated)
-  const { data: leads } = LeadModel.findAll(
+  const { data: leads } = await LeadModel.findAll(
     filters,
     { page: 1, limit: 100000 },
     { sortBy: 'created_at', sortOrder: 'desc' },
@@ -38,7 +38,7 @@ export async function exportJson(filters: LeadFilters, res: Response): Promise<v
   res.end(JSON.stringify(leads, null, 2));
 
   // Save export record
-  ExportModel.create({
+  await ExportModel.create({
     filename,
     filter_source: source,
     record_count: leads.length,

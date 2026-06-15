@@ -36,7 +36,7 @@ router.use('/searches', searchesRoutes);
 // GET /api/exports — List past exports
 router.get('/exports', async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    const exports = ExportModel.findAll();
+    const exports = await ExportModel.findAll();
     res.json({ success: true, data: exports });
   } catch (err) {
     next(err);

@@ -21,9 +21,15 @@ export const leadService = {
       // Ensure source is set
       leadInput.source = source as LeadCreateInput['source'];
 
+      // Skip leads without any contact info
+      if (!leadInput.email && !leadInput.phone) {
+        console.log(`[leadService] Skipping lead "${leadInput.business_name}" — no email or phone`);
+        continue;
+      }
+
       // Check for dedup: same page_url + source
       if (leadInput.page_url) {
-        const existing = LeadModel.findByUrlAndSource(leadInput.page_url, source);
+        const existing = await LeadModel.findByUrlAndSource(leadInput.page_url, source);
 
         if (existing) {
           // Merge: only fill null fields in existing record with incoming non-null values
@@ -63,7 +69,7 @@ export const leadService = {
           }
 
           if (Object.keys(updates).length > 0) {
-            LeadModel.update(existing.id, updates);
+            await LeadModel.update(existing.id, updates);
           }
 
           continue;
@@ -71,7 +77,7 @@ export const leadService = {
       }
 
       // Insert new lead
-      LeadModel.create(leadInput);
+      await LeadModel.create(leadInput);
       inserted++;
     }
 
@@ -83,11 +89,11 @@ export const leadService = {
     pagination: { page: number; limit: number },
     sort: { sortBy: string; sortOrder: string },
   ): Promise<{ data: Lead[]; meta: PaginationMeta }> {
-    return LeadModel.findAll(filters, pagination, sort);
+    return await LeadModel.findAll(filters, pagination, sort);
   },
 
   async getLead(id: number): Promise<Lead> {
-    const lead = LeadModel.findById(id);
+    const lead = await LeadModel.findById(id);
     if (!lead) {
       throw new AppError(404, 'NOT_FOUND', `Lead with id ${id} not found`);
     }
@@ -95,11 +101,11 @@ export const leadService = {
   },
 
   async createLead(input: LeadCreateInput): Promise<Lead> {
-    return LeadModel.create(input);
+    return await LeadModel.create(input);
   },
 
   async updateLead(id: number, input: LeadUpdateInput): Promise<Lead> {
-    const lead = LeadModel.update(id, input);
+    const lead = await LeadModel.update(id, input);
     if (!lead) {
       throw new AppError(404, 'NOT_FOUND', `Lead with id ${id} not found`);
     }
@@ -107,7 +113,7 @@ export const leadService = {
   },
 
   async deleteLead(id: number): Promise<boolean> {
-    const deleted = LeadModel.delete(id);
+    const deleted = await LeadModel.delete(id);
     if (!deleted) {
       throw new AppError(404, 'NOT_FOUND', `Lead with id ${id} not found`);
     }
@@ -118,15 +124,15 @@ export const leadService = {
     if (ids.length === 0) {
       throw new AppError(400, 'VALIDATION_ERROR', 'ids array must not be empty');
     }
-    return LeadModel.bulkUpdateStatus(ids, status);
+    return await LeadModel.bulkUpdateStatus(ids, status);
   },
 
   async bulkDelete(ids?: number[], filter?: LeadFilters): Promise<number> {
     if (ids && ids.length > 0) {
-      return LeadModel.bulkDeleteByIds(ids);
+      return await LeadModel.bulkDeleteByIds(ids);
     }
     if (filter) {
-      const deleted = LeadModel.bulkDeleteByFilter(filter);
+      const deleted = await LeadModel.bulkDeleteByFilter(filter);
       return deleted;
     }
     throw new AppError(400, 'VALIDATION_ERROR', 'Provide ids array or filter object');

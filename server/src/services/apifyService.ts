@@ -58,7 +58,7 @@ function buildActorInput(source: Source, input: ScrapeInput): Record<string, unk
   const maxPagesPerQuery = Math.max(1, Math.ceil(cappedMax / 10));
 
   return {
-    queries: [query],
+    queries: query,
     resultsPerPage: 10,
     maxPagesPerQuery,
     languageCode: 'en',
@@ -69,57 +69,104 @@ function buildActorInput(source: Source, input: ScrapeInput): Record<string, unk
     saveHtmlToKeyValueStore: false,
     includeAds: false,
     parallelQueries: 1,
+    maximumLeadsEnrichmentRecords: 5,
+    leadsEnrichmentDepartments: ['marketing', 'sales', 'operations'],
   };
 }
 
-function transformGoogleSearchResult(item: Record<string, unknown>, source: Source): LeadCreateInput | null {
+function transformGoogleSearchResult(
+  item: Record<string, unknown>,
+  source: Source,
+  input: ScrapeInput,
+): LeadCreateInput[] {
+  const leads: LeadCreateInput[] = [];
+
+  // Try v2 format: organicResults array
+  const organicResults = (item.organicResults as any[]) || [];
+  for (const or of organicResults) {
+    const title = (or.title as string) || '';
+    const url = (or.url as string) || '';
+    if (!title && !url) continue;
+
+    // Try to extract enriched contacts from various field names
+    let email: string | null = null;
+    let phone: string | null = null;
+    const enrichedLeads = (or.leads || or.leadsEnrichment || or.businessLeads || or.contacts || []) as any[];
+    if (enrichedLeads.length > 0) {
+      const contact = enrichedLeads[0];
+      email = (contact.email as string) || null;
+      phone = (contact.phone as string) || null;
+    }
+
+    // Skip if no contact info
+    if (!email && !phone) continue;
+
+    // Extract business details
+    let businessName: string | null = title;
+    let socialHandle: string | null = null;
+    let pageUrl: string | null = url;
+
+    if (source === 'facebook') {
+      businessName = title.replace(/\s*\|\s*Facebook$/, '').trim() || null;
+      pageUrl = url || null;
+    } else if (source === 'instagram') {
+      const handleMatch = url.match(/instagram\.com\/([^/?]+)/);
+      socialHandle = handleMatch ? `@${handleMatch[1]}` : null;
+      businessName = title || null;
+      pageUrl = url || null;
+    }
+
+    leads.push({
+      source,
+      business_type: input.businessType,
+      location: input.location,
+      business_name: businessName,
+      page_url: pageUrl,
+      email,
+      phone,
+      address: null,
+      rating: null,
+      review_count: null,
+      social_handle: socialHandle,
+      description: (or.description as string) || null,
+      raw_data: JSON.stringify(or),
+      status: 'new',
+    });
+  }
+
+  // Legacy fallback: flat item format
   const title = (item.title as string) || '';
   const url = (item.url as string) || '';
   const description = (item.description as string) || '';
-
-  if (!title && !url) return null;
-
-  let businessName: string | null = title;
-  let socialHandle: string | null = null;
-  let pageUrl: string | null = url;
-
-  if (source === 'facebook') {
-    // Extract page name from title
-    businessName = title.replace(/\s*\|\s*Facebook$/, '').trim() || null;
-    pageUrl = url || null;
-  } else if (source === 'instagram') {
-    // Extract handle from URL
-    const handleMatch = url.match(/instagram\.com\/([^/?]+)/);
-    socialHandle = handleMatch ? `@${handleMatch[1]}` : null;
-    businessName = title || null;
-    pageUrl = url || null;
+  if (title && url && !organicResults.length) {
+    leads.push({
+      source,
+      business_type: input.businessType,
+      location: input.location,
+      business_name: title,
+      page_url: url,
+      email: null,
+      phone: null,
+      address: null,
+      rating: null,
+      review_count: null,
+      social_handle: null,
+      description: description || null,
+      raw_data: JSON.stringify(item),
+      status: 'new',
+    });
   }
 
-  return {
-    source,
-    business_type: '',
-    location: '',
-    business_name: businessName,
-    page_url: pageUrl,
-    email: null,
-    phone: null,
-    address: null,
-    rating: null,
-    review_count: null,
-    social_handle: socialHandle,
-    description: description || null,
-    raw_data: JSON.stringify(item),
-    status: 'new',
-  };
+  return leads;
 }
 
-function transformGoogleMapsResult(place: Record<string, unknown>): LeadCreateInput | null {
+function transformGoogleMapsResult(place: Record<string, unknown>, input: ScrapeInput): LeadCreateInput | null {
   if (!place || !place.title) return null;
 
   return {
     source: 'google_maps',
-    business_type: '',
-    location: '',
+    business_type: input.businessType,
+    location: input.location,
     business_name: (place.title as string) || null,
     page_url: (place.website as string) || (place.url as string) || null,
     email: Array.isArray(place.emails) && place.emails.length > 0
@@ -194,10 +241,10 @@ export async function startAndWaitForRun(
 
         // Transform results
         if (source === 'google_maps') {
-          return items.map((item: any) => transformGoogleMapsResult(item)).filter(Boolean) as LeadCreateInput[];
+          return items.map((item: any) => transformGoogleMapsResult(item, input)).filter(Boolean) as LeadCreateInput[];
         }
 
-        return items.map((item: any) => transformGoogleSearchResult(item, source)).filter(Boolean) as LeadCreateInput[];
+        return items.flatMap((item: any) => transformGoogleSearchResult(item, source, input)) as LeadCreateInput[];
       }
 
       const runStatus2 = currentRun.status as string;
@@ -224,9 +271,9 @@ export async function startAndWaitForRun(
       if (items.length > 0) {
         console.log(`[apifyService] Returning ${items.length} partial results from timed-out run`);
         if (source === 'google_maps') {
-          return items.map((item: any) => transformGoogleMapsResult(item)).filter(Boolean) as LeadCreateInput[];
+          return items.map((item: any) => transformGoogleMapsResult(item, input)).filter(Boolean) as LeadCreateInput[];
         }
-        return items.map((item: any) => transformGoogleSearchResult(item, source)).filter(Boolean) as LeadCreateInput[];
+        return items.flatMap((item: any) => transformGoogleSearchResult(item, source, input)) as LeadCreateInput[];
       }
     }
   } catch {

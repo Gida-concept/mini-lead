@@ -1,4 +1,3 @@
-import initSqlJs, { Database as SqlJsDatabase, SqlJsStatic } from 'sql.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -7,143 +6,156 @@ import { env } from './env.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ---------------------------------------------------------------------------
-// Thin compatibility wrapper — makes sql.js look like better-sqlite3
+// Async database interface
 // ---------------------------------------------------------------------------
 
-interface RunResult {
-  changes: number;
-  lastInsertRowid: number;
+export interface DbResult {
+  rows: any[];
+  rowCount: number;
 }
 
-class StatementWrapper {
-  constructor(
-    private sql: string,
-    private db: SqlJsDatabase,
-    private dbWrapper: DatabaseWrapper,
-  ) {}
-
-  /** Return first matching row or undefined */
-  get(...params: any[]): Record<string, unknown> | undefined {
-    const stmt = this.db.prepare(this.sql);
-    stmt.bind(params);
-    const has = stmt.step();
-    if (has) {
-      const row = stmt.getAsObject() as Record<string, unknown>;
-      stmt.free();
-      return row;
-    }
-    stmt.free();
-    return undefined;
-  }
-
-  /** Return all matching rows */
-  all(...params: any[]): Record<string, unknown>[] {
-    const stmt = this.db.prepare(this.sql);
-    stmt.bind(params);
-    const rows: Record<string, unknown>[] = [];
-    while (stmt.step()) {
-      rows.push(stmt.getAsObject() as Record<string, unknown>);
-    }
-    stmt.free();
-    return rows;
-  }
-
-  /** Run INSERT/UPDATE/DELETE -- returns { changes, lastInsertRowid } */
-  run(...params: any[]): RunResult {
-    const stmt = this.db.prepare(this.sql);
-    stmt.bind(params);
-    stmt.step();
-    stmt.free();
-
-    const changes = this.db.getRowsModified();
-    const lastIdResult = this.db.exec('SELECT last_insert_rowid()');
-    const lastInsertRowid =
-      lastIdResult.length > 0
-        ? (lastIdResult[0].values[0][0] as number)
-        : 0;
-
-    this.dbWrapper.markDirty();
-
-    return { changes, lastInsertRowid };
-  }
+export interface DbAsync {
+  execute(sql: string, params?: any[]): Promise<DbResult>;
 }
 
-class DatabaseWrapper {
-  private db: SqlJsDatabase;
-  private filePath: string;
-  private dirty = false;
+let db: DbAsync;
 
-  constructor(sql: SqlJsStatic, filePath: string, loadExisting: boolean) {
-    this.filePath = filePath;
+// ---------------------------------------------------------------------------
+// sql.js provider
+// ---------------------------------------------------------------------------
 
-    if (loadExisting && fs.existsSync(filePath)) {
-      const buffer = fs.readFileSync(filePath);
-      this.db = new sql.Database(buffer);
-    } else {
-      this.db = new sql.Database();
-    }
-  }
+async function createSqlJsDb(): Promise<DbAsync> {
+  const { default: initSqlJs } = await import('sql.js');
+  const SQL = await initSqlJs();
 
-  /** Return a prepared-statement wrapper */
-  prepare(sql: string): StatementWrapper {
-    return new StatementWrapper(sql, this.db, this);
-  }
+  const dbPath = path.resolve(__dirname, '../..', env.DATABASE_PATH);
+  let sqlJsDb: any;
+  let dirty = false;
 
-  /** Execute one or more SQL statements (DDL mostly), no results returned */
-  exec(sql: string): void {
-    this.db.exec(sql);
-    this.markDirty();
-  }
-
-  /** Run pragma */
-  pragma(value: string): void {
-    this.db.run(`PRAGMA ${value}`);
-  }
-
-  /** Persist to disk if dirty */
-  save(): void {
-    if (!this.dirty) return;
-    const dir = path.dirname(this.filePath);
+  if (fs.existsSync(dbPath)) {
+    const buffer = fs.readFileSync(dbPath);
+    sqlJsDb = new SQL.Database(buffer);
+  } else {
+    sqlJsDb = new SQL.Database();
+    const dir = path.dirname(dbPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    const data = this.db.export();
-    fs.writeFileSync(this.filePath, Buffer.from(data));
-    this.dirty = false;
   }
 
-  markDirty(): void {
-    this.dirty = true;
+  function markDirty(): void {
+    dirty = true;
   }
+
+  function save(): void {
+    if (!dirty) return;
+    const data = sqlJsDb.export();
+    const dir = path.dirname(dbPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(dbPath, Buffer.from(data));
+    dirty = false;
+  }
+
+  // Run pragmas — use sql.js run() directly for PRAGMA statements
+  try {
+    sqlJsDb.run('PRAGMA journal_mode = WAL');
+  } catch {
+    // sql.js may not support WAL pragma, ignore
+  }
+  try {
+    sqlJsDb.run('PRAGMA foreign_keys = ON');
+  } catch {
+    // ignore
+  }
+
+  const dbAsync: DbAsync = {
+    async execute(sql: string, params?: any[]): Promise<DbResult> {
+      const p = params || [];
+      const isWrite = /^(INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)\b/i.test(sql.trim());
+
+      // Handle PRAGMA directly
+      if (/^\s*PRAGMA\b/i.test(sql)) {
+        sqlJsDb.run(sql);
+        return { rows: [], rowCount: 0 };
+      }
+
+      const stmt = sqlJsDb.prepare(sql);
+      stmt.bind(p);
+
+      const rows: any[] = [];
+      while (stmt.step()) {
+        rows.push(stmt.getAsObject());
+      }
+      stmt.free();
+
+      let rowCount = rows.length;
+
+      if (isWrite) {
+        rowCount = sqlJsDb.getRowsModified();
+        markDirty();
+      }
+
+      return { rows, rowCount };
+    },
+  };
+
+  // Run migrations
+  await runMigrations(dbAsync);
+
+  // Save after all migrations
+  save();
+
+  return dbAsync;
 }
 
 // ---------------------------------------------------------------------------
-// Initialize database
+// Turso (@libsql/client) provider
 // ---------------------------------------------------------------------------
 
-const dbPath = path.resolve(__dirname, '../..', env.DATABASE_PATH);
+async function createTursoDb(): Promise<DbAsync> {
+  const { createClient } = await import('@libsql/client');
 
-const SQL = await initSqlJs();
-const db = new DatabaseWrapper(SQL, dbPath, true);
+  if (!env.TURSO_DATABASE_URL) {
+    throw new Error('TURSO_DATABASE_URL is required when DATABASE_PROVIDER=turso');
+  }
 
-// Enable WAL-like mode (sql.js uses a single connection, but pragma is safe)
-try {
-  db.pragma('journal_mode = WAL');
-} catch {
-  // sql.js may not support WAL pragma, ignore
+  const client = createClient({
+    url: env.TURSO_DATABASE_URL,
+    authToken: env.TURSO_AUTH_TOKEN,
+  });
+
+  const dbAsync: DbAsync = {
+    async execute(sql: string, params?: any[]): Promise<DbResult> {
+      const result = await client.execute({
+        sql,
+        args: params || [],
+      });
+      return {
+        rows: result.rows as any[],
+        // For SELECT, this is the number of rows returned.
+        // For INSERT/UPDATE/DELETE, @libsql/client returns rows affected.
+        rowCount: result.rows.length,
+      };
+    },
+  };
+
+  // Run migrations
+  await runMigrations(dbAsync);
+
+  return dbAsync;
 }
-try {
-  db.pragma('foreign_keys = ON');
-} catch {
-  // ignore
-}
 
-// Run migrations
-function runMigrations(): void {
+// ---------------------------------------------------------------------------
+// Migration runner (async)
+// ---------------------------------------------------------------------------
+
+async function runMigrations(database: DbAsync): Promise<void> {
   const migrationsDir = path.resolve(__dirname, '../../database/migrations');
 
-  // Create migrations tracking table
-  db.exec(`
+  // Create migration tracking table
+  await database.execute(`
     CREATE TABLE IF NOT EXISTS _migrations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL UNIQUE,
@@ -158,8 +170,10 @@ function runMigrations(): void {
     .filter((f) => f.endsWith('.sql'))
     .sort();
 
-  const rows = db.prepare('SELECT name FROM _migrations').all();
-  const applied = new Set(rows.map((r: any) => r.name));
+  if (migrationFiles.length === 0) return;
+
+  const result = await database.execute('SELECT name FROM _migrations');
+  const applied = new Set(result.rows.map((r: any) => r.name));
 
   for (const file of migrationFiles) {
     if (applied.has(file)) continue;
@@ -168,19 +182,35 @@ function runMigrations(): void {
     console.log(`Running migration: ${file}`);
 
     try {
-      db.exec(sql);
-      db.prepare('INSERT INTO _migrations (name) VALUES (?)').run(file);
+      // Split multi-statement migration files by semicolons
+      const statements = sql
+        .split(';')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+
+      for (const stmt of statements) {
+        await database.execute(stmt);
+      }
+
+      await database.execute('INSERT INTO _migrations (name) VALUES (?)', [file]);
       console.log(`Migration ${file} applied`);
     } catch (err) {
       console.error(`Migration ${file} failed:`, err);
       throw err;
     }
   }
-
-  // Save after all migrations
-  db.save();
 }
 
-runMigrations();
+// ---------------------------------------------------------------------------
+// Initialize
+// ---------------------------------------------------------------------------
+
+if (env.DATABASE_PROVIDER === 'turso') {
+  console.log('[database] Using Turso provider');
+  db = await createTursoDb();
+} else {
+  console.log('[database] Using sql.js provider');
+  db = await createSqlJsDb();
+}
 
 export { db };

@@ -12,37 +12,35 @@ function rowToExport(row: Record<string, unknown>): ExportRecord {
 }
 
 export const ExportModel = {
-  create(input: ExportCreateInput): ExportRecord {
-    const stmt = db.prepare(`
-      INSERT INTO exports (filename, filter_source, record_count)
-      VALUES (?, ?, ?)
-    `);
+  async create(input: ExportCreateInput): Promise<ExportRecord> {
+    await db.execute(
+      `INSERT INTO exports (filename, filter_source, record_count)
+       VALUES (?, ?, ?)`,
+      [input.filename, input.filter_source, input.record_count],
+    );
 
-    const result = stmt.run(input.filename, input.filter_source, input.record_count);
-    const row = db.prepare('SELECT * FROM exports WHERE id = ?').get(result.lastInsertRowid) as Record<string, unknown>;
-    return rowToExport(row);
+    const idResult = await db.execute('SELECT last_insert_rowid() as id');
+    const newId = (idResult.rows[0] as any).id;
+    const rowResult = await db.execute('SELECT * FROM exports WHERE id = ?', [newId]);
+    return rowToExport(rowResult.rows[0] as Record<string, unknown>);
   },
 
-  findAll(): ExportRecord[] {
-    const rows = db.prepare(
-      'SELECT * FROM exports ORDER BY created_at DESC',
-    ).all() as Record<string, unknown>[];
-
-    return rows.map(rowToExport);
+  async findAll(): Promise<ExportRecord[]> {
+    const result = await db.execute('SELECT * FROM exports ORDER BY created_at DESC');
+    return result.rows.map(rowToExport);
   },
 
-  getRecentStats(): { last24h: number; last7d: number } {
-    const last24hRow = db.prepare(
+  async getRecentStats(): Promise<{ last24h: number; last7d: number }> {
+    const last24hResult = await db.execute(
       "SELECT COUNT(*) as count FROM exports WHERE created_at >= datetime('now', '-1 day')",
-    ).get() as { count: number };
-
-    const last7dRow = db.prepare(
+    );
+    const last7dResult = await db.execute(
       "SELECT COUNT(*) as count FROM exports WHERE created_at >= datetime('now', '-7 days')",
-    ).get() as { count: number };
+    );
 
     return {
-      last24h: last24hRow.count,
-      last7d: last7dRow.count,
+      last24h: (last24hResult.rows[0] as any).count,
+      last7d: (last7dResult.rows[0] as any).count,
     };
   },
 };
