@@ -33,7 +33,7 @@ if (env.NODE_ENV === 'production' && fs.existsSync(clientOutDir)) {
   app.use(express.static(clientOutDir, { extensions: ['html'] }));
 
   // SPA catch-all: for any non-API route, serve the corresponding static HTML file
-  app.get('*', (req, res) => {
+  app.use((req, res) => {
     if (req.path.startsWith('/api/')) {
       res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Not found' } });
       return;

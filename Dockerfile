@@ -28,9 +28,10 @@ COPY --from=build /app/client/out ./client/out
 # Root node_modules (hoisted workspace deps — enough for server to run)
 COPY --from=build /app/node_modules ./node_modules
 
-# Package manifests (for process info, not strictly required)
-COPY package.json ./package.json
+# Copy server package.json so Node detects "type": "module"
+COPY server/package.json ./server/package.json
 
 EXPOSE 3001
 
-CMD ["node", "server/dist/server.js"]
+# Run from server/ dir so Node uses server/package.json (type: module)
+CMD cd /app/server && node dist/server.js
