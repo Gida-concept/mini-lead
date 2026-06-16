@@ -4,8 +4,10 @@ import './config/database.js';
 import { app } from './app.js';
 import { env } from './config/env.js';
 
-const server = app.listen(env.PORT, () => {
-  console.log(`Server running on port ${env.PORT}`);
+const HOST = '0.0.0.0';
+
+const server = app.listen(env.PORT, HOST, () => {
+  console.log(`Server running on ${HOST}:${env.PORT}`);
 });
 
 // Graceful shutdown
