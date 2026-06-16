@@ -1,0 +1,10 @@
+node_modules
+dist
+*.db
+.env
+.git
+client/.next
+client/out
+server/dist
+server/exports
+.DS_Store

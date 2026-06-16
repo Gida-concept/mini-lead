@@ -26,7 +26,9 @@ import type {
 // Axios instance
 // ---------------------------------------------------------------------------
 export const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
+  // In production, frontend and API are on the same origin (Fly.io).
+  // In development, the Next.js rewrites proxy /api/* to the Express backend.
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "",
   headers: { "Content-Type": "application/json" },
 });
 
