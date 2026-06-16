@@ -15,19 +15,12 @@ const scrapeBodySchema = z.object({
 });
 
 const sourceParamSchema = z.object({
-  source: z.enum(['facebook', 'instagram', 'google_web', 'google_maps']),
+  source: z.enum(['google_maps']),
 });
 
 const ESTIMATED_TIMES: Record<string, number> = {
-  facebook: 60,
-  instagram: 60,
-  google_web: 90,
   google_maps: 120,
 };
-
-function mapRouteSource(source: string): string {
-  return source;
-}
 
 // POST /api/scrape/:source
 router.post(
@@ -37,32 +30,29 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { source } = (req as any).parsedParams;
-      const { businessType, location, maxResults } = req.body;
-
-      const dbSource = mapRouteSource(source) as 'facebook' | 'instagram' | 'google_web' | 'google_maps';
 
       // Create search record
       const search = await searchService.createSearch({
-        source: dbSource,
-        query_params: JSON.stringify({ businessType, location, maxResults }),
+        source,
+        query_params: JSON.stringify({ businessType: req.body.businessType, location: req.body.location, maxResults: req.body.maxResults }),
         run_status: 'running',
       });
 
       // Fire and forget — run in background
       (async () => {
         try {
-          const results = await startAndWaitForRun(dbSource, {
-            businessType,
-            location,
-            maxResults,
+          const results = await startAndWaitForRun(source, {
+            businessType: req.body.businessType,
+            location: req.body.location,
+            maxResults: req.body.maxResults,
           });
 
-          const count = await leadService.bulkInsertFromScrape(results, dbSource);
+          const count = await leadService.bulkInsertFromScrape(results, source);
 
           await searchService.updateSearch(search.id, 'completed', count);
-          console.log(`[scrape] ${dbSource} completed: ${count} new leads inserted`);
+          console.log(`[scrape] google_maps completed: ${count} new leads inserted`);
         } catch (err) {
-          console.error(`[scrape] ${dbSource} failed:`, err);
+          console.error('[scrape] google_maps failed:', err);
           try {
             await searchService.updateSearch(search.id, 'failed');
           } catch {
@@ -76,10 +66,10 @@ router.post(
         success: true,
         data: {
           searchId: search.id,
-          source: dbSource,
+          source,
           status: 'running',
           message: `Scrape job started. Poll GET /searches/${search.id} for status.`,
-          estimatedTimeSeconds: ESTIMATED_TIMES[source] || 60,
+          estimatedTimeSeconds: ESTIMATED_TIMES[source] || 120,
         },
       });
     } catch (err) {

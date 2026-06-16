@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Lead Generation Engine",
-  description: "Scrape and manage business leads from Facebook, Instagram, Google Web, and Google Maps.",
+  description: "Scrape and manage business leads from Google Maps.",
 };
 
 export default function RootLayout({

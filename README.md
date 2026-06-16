@@ -1,18 +1,14 @@
 # Lead Generation Engine 🚀
 
-> **A personal tool for scraping business leads from Facebook, Instagram, Google Web Search, and Google Maps.**
+> **A personal tool for scraping business leads from Google Maps.**
 
-Search for businesses by type and location across multiple platforms, collect contact info, manage lead statuses, and export data to CSV or JSON — all from a clean, responsive dashboard.
+Search for businesses by type and location, collect contact info, manage lead statuses, and export data to CSV or JSON — all from a clean, responsive dashboard.
 
 ---
 
 ## ✨ Features
 
-- **Multi-Source Scraping** — Collect leads from 4 sources:
-  - Facebook Pages
-  - Instagram Business Profiles
-  - Google Web Search
-  - Google Maps
+- **Google Maps Scraping** — Collect business leads from Google Maps
 - **Smart Search** — Enter any business type and location, get structured lead data
 - **Lead Management** — Sort, filter, search, and bulk-update lead statuses (new → contacted → qualified → rejected)
 - **Detailed Lead View** — Business name, email, phone, address, rating, social handles, and raw data
@@ -34,7 +30,7 @@ Search for businesses by type and location across multiple platforms, collect co
 | **Backend** | Express.js 5, TypeScript |
 | **Database** | SQLite (sql.js) |
 | **Validation** | Zod |
-| **Scraping** | SerpAPI (Google Search + Google Maps APIs) |
+| **Scraping** | SerpAPI (Google Maps API) |
 | **Export** | fast-csv |
 
 ---
@@ -51,8 +47,7 @@ Search for businesses by type and location across multiple platforms, collect co
                      ┌──────▼───────┐
                      │  SerpAPI     │
                      │  (Google     │
-                     │   Search +   │
-                     │   Maps)      │
+                     │   Maps API)  │
                      └──────┬───────┘
                             │
                      ┌──────▼──────────┐

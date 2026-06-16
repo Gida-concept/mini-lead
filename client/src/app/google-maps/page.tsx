@@ -61,8 +61,7 @@ export default function GoogleMapsPage() {
 
   const handleSearch = useCallback(
     async (input: ScrapeInput) => {
-      await triggerScrape(SOURCE, input);
-      refetchLeads();
+      await triggerScrape(SOURCE, input, refetchLeads);
     },
     [triggerScrape, refetchLeads]
   );

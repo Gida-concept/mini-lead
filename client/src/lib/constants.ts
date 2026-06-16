@@ -1,16 +1,10 @@
 import type { LeadSource, LeadStatus } from "@/types/lead";
 
 export const SOURCES: LeadSource[] = [
-  "facebook",
-  "instagram",
-  "google_web",
   "google_maps",
 ];
 
 export const SOURCE_LABELS: Record<LeadSource, string> = {
-  facebook: "Facebook",
-  instagram: "Instagram",
-  google_web: "Google Web",
   google_maps: "Google Maps",
 };
 
@@ -190,8 +184,5 @@ export const LOCATION_SUGGESTIONS = [
 ];
 
 export const SOURCE_ICONS: Record<LeadSource, string> = {
-  facebook: "facebook",
-  instagram: "camera",
-  google_web: "globe",
   google_maps: "map-pin",
 };

@@ -8,12 +8,12 @@
     "server"
   ],
   "scripts": {
-    "dev": "concurrently -n client,server -c blue,green \"npm run client:dev\" \"npm run server:dev\"",
+    "dev": "concurrently -n client,server -c blue,green \"cd client && npm run dev\" \"cd server && npm run dev\"",
     "build": "npm run client:build && npm run server:build",
-    "client:dev": "npm run dev --workspace=client",
-    "client:build": "npm run build --workspace=client",
-    "server:dev": "npm run dev --workspace=server",
-    "server:build": "npm run build --workspace=server"
+    "client:dev": "cd client && npm run dev",
+    "client:build": "cd client && npm run build",
+    "server:dev": "cd server && npm run dev",
+    "server:build": "cd server && npm run build"
   },
   "devDependencies": {
     "autoprefixer": "^10.5.0",

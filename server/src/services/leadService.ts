@@ -18,12 +18,11 @@ export const leadService = {
     let inserted = 0;
 
     for (const leadInput of leads) {
-      // Ensure source is set
-      leadInput.source = source as LeadCreateInput['source'];
+      // source is already set by the caller
 
-      // Skip leads without any contact info
-      if (!leadInput.email && !leadInput.phone) {
-        console.log(`[leadService] Skipping lead "${leadInput.business_name}" — no email or phone`);
+      // Skip leads without any identifying info
+      if (!leadInput.business_name && !leadInput.page_url) {
+        console.log(`[leadService] Skipping lead — no business_name or page_url`);
         continue;
       }
 

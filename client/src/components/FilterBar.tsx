@@ -10,25 +10,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SOURCES, STATUSES, SOURCE_LABELS, STATUS_LABELS } from "@/lib/constants";
-import type { LeadSource, LeadStatus } from "@/types/lead";
+import { STATUSES, STATUS_LABELS } from "@/lib/constants";
+import type { LeadStatus } from "@/types/lead";
 
 interface FilterBarProps {
-  selectedSource?: LeadSource | "all";
   selectedStatus?: LeadStatus | "all";
   searchQuery: string;
-  showSource?: boolean;
-  onSourceChange?: (source: LeadSource | "all") => void;
   onStatusChange: (status: LeadStatus | "all") => void;
   onSearchChange: (query: string) => void;
 }
 
 export function FilterBar({
-  selectedSource = "all",
   selectedStatus = "all",
   searchQuery,
-  showSource = false,
-  onSourceChange,
   onStatusChange,
   onSearchChange,
 }: FilterBarProps) {
@@ -51,25 +45,6 @@ export function FilterBar({
 
   return (
     <div className="flex flex-wrap items-center gap-3 py-3">
-      {showSource && onSourceChange && (
-        <Select
-          value={selectedSource}
-          onValueChange={(v) => onSourceChange(v as LeadSource | "all")}
-        >
-          <SelectTrigger className="w-full sm:w-[160px]">
-            <SelectValue placeholder="All Sources" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Sources</SelectItem>
-            {SOURCES.map((s) => (
-              <SelectItem key={s} value={s}>
-                {SOURCE_LABELS[s]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-
       <Select
         value={selectedStatus}
         onValueChange={(v) => onStatusChange(v as LeadStatus | "all")}

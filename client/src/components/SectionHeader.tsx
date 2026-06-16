@@ -1,4 +1,4 @@
-import { Globe, Camera, MapPin, Facebook } from "lucide-react";
+import { MapPin } from "lucide-react";
 import type { LeadSource } from "@/types/lead";
 import { SOURCE_LABELS } from "@/lib/constants";
 
@@ -8,9 +8,6 @@ interface SectionHeaderProps {
 }
 
 const sourceIcons: Record<LeadSource, React.ElementType> = {
-  facebook: Facebook,
-  instagram: Camera,
-  google_web: Globe,
   google_maps: MapPin,
 };
 

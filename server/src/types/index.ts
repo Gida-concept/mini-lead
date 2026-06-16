@@ -2,7 +2,7 @@
 
 export interface Lead {
   id: number;
-  source: 'facebook' | 'instagram' | 'google_web' | 'google_maps';
+  source: 'google_maps';
   business_type: string;
   location: string;
   business_name: string | null;

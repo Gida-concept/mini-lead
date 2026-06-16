@@ -22,16 +22,7 @@ function buildQueryString(
   const bt = businessType || "[business type]";
   const loc = location || "[location]";
 
-  switch (source) {
-    case "facebook":
-      return `site:facebook.com/pages "${bt}" "${loc}"`;
-    case "instagram":
-      return `site:instagram.com "${bt}" "${loc}"`;
-    case "google_web":
-      return `"${bt}" "${loc}"`;
-    case "google_maps":
-      return `${bt} in ${loc}`;
-  }
+  return `${bt} in ${loc}`;
 }
 
 export function QueryPreview({

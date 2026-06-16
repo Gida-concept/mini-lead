@@ -1,4 +1,4 @@
-export type LeadSource = "facebook" | "instagram" | "google_web" | "google_maps";
+export type LeadSource = "google_maps";
 
 export type LeadStatus = "new" | "contacted" | "qualified" | "rejected";
 

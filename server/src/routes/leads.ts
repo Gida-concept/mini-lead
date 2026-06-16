@@ -23,7 +23,7 @@ const listQuerySchema = z.object({
 });
 
 const createBodySchema = z.object({
-  source: z.enum(['facebook', 'instagram', 'google_web', 'google_maps']),
+  source: z.enum(['google_maps']),
   business_type: z.string().min(1),
   location: z.string().min(1),
   business_name: z.string().optional().nullable(),

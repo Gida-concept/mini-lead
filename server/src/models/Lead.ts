@@ -291,7 +291,7 @@ export const LeadModel = {
     }
 
     // Ensure all sources and statuses are present even if zero
-    for (const s of ['facebook', 'instagram', 'google_web', 'google_maps']) {
+    for (const s of ['google_maps']) {
       if (!(s in bySource)) bySource[s] = 0;
     }
     for (const s of ['new', 'contacted', 'qualified', 'rejected']) {

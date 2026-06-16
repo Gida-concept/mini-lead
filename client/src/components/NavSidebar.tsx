@@ -5,9 +5,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useCallback, useRef } from "react";
 import {
   LayoutDashboard,
-  Facebook,
-  Camera,
-  Globe,
   MapPin,
   Menu,
   X,
@@ -19,9 +16,6 @@ import { useState } from "react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/facebook", label: "Facebook", icon: Facebook },
-  { href: "/instagram", label: "Instagram", icon: Camera },
-  { href: "/google-web", label: "Google Web", icon: Globe },
   { href: "/google-maps", label: "Google Maps", icon: MapPin },
 ];
 
