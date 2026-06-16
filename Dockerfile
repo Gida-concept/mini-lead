@@ -31,6 +31,9 @@ COPY --from=build /app/node_modules ./node_modules
 # Copy server package.json so Node detects "type": "module"
 COPY server/package.json ./server/package.json
 
+# Migration SQL files (needed at runtime to create tables)
+COPY --from=build /app/server/database ./server/database
+
 EXPOSE 3001
 
 # Run from server/ dir so Node uses server/package.json (type: module)
